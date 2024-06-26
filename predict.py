@@ -139,11 +139,9 @@ def main():
                     continue
                 else:
                     raise e
-            runtime[item["name"]].append(time.time() - start)
-            result.append(prots[-1])
 
-        # Clear CUDA cache
-        torch.cuda.empty_cache()
+            # Clear CUDA cache
+            torch.cuda.empty_cache()
 
         with open(f'{args.outpdb}/{item["name"]}.pdb', "w") as f:
             f.write(protein.prots_to_pdb(result))
