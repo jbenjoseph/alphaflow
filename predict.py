@@ -134,7 +134,7 @@ def main():
             except RuntimeError as e:
                 if "CUDA out of memory" in str(e):
                     logger.warning(
-                        f"Out of memory when processing {item['name']}: {str(e)}"
+                        f"\nOut of memory when processing {item['name']}: {str(e)}"
                     )
                     continue
                 else:
