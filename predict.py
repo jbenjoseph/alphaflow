@@ -131,6 +131,12 @@ def main():
                     schedule=schedule,
                     self_cond=args.self_cond,
                 )
+                inference_time = time.time() - start
+                logger.info(
+                    f"\n{item['name']}: Length {len(item['seqres'])}, Completed {args.samples} samples in {inference_time:.2f} seconds, {inference_time / args.samples:.2f} seconds per sample."
+                )
+                runtime[item["name"]].append(inference_time)
+                result.append(prots[-1])
             except RuntimeError as e:
                 if "CUDA out of memory" in str(e):
                     logger.warning(
