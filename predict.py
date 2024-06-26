@@ -122,14 +122,23 @@ def main():
             batch = collate_fn([item])
             batch = tensor_tree_map(lambda x: x.to(device), batch)
             start = time.time()
-            prots = model.inference(
-                batch,
-                as_protein=True,
-                noisy_first=args.noisy_first,
-                no_diffusion=args.no_diffusion,
-                schedule=schedule,
-                self_cond=args.self_cond,
-            )
+            try:
+                prots = model.inference(
+                    batch,
+                    as_protein=True,
+                    noisy_first=args.noisy_first,
+                    no_diffusion=args.no_diffusion,
+                    schedule=schedule,
+                    self_cond=args.self_cond,
+                )
+            except RuntimeError as e:
+                if "CUDA out of memory" in str(e):
+                    logger.warning(
+                        f"Out of memory when processing {item['name']}: {str(e)}"
+                    )
+                    continue
+                else:
+                    raise e
             runtime[item["name"]].append(time.time() - start)
             result.append(prots[-1])
 
