@@ -71,8 +71,8 @@ class CSVDataset:
     def __getitem__(self, idx):
         row = self.pdb_chains.iloc[idx]
         batch = {
-            'name': row.name,
-            'seqres': row.seqres,
+            'PDB_ID': row.name,
+            'uniprot_sequence': row.seqres,
             'aatype': seq_to_tensor(row.seqres),
             'residue_index': torch.arange(len(row.seqres)),
             'pseudo_beta_mask': torch.ones(len(row.seqres)),
