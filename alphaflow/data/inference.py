@@ -62,7 +62,7 @@ class AlphaFoldCSVDataset:
 class CSVDataset:
     def __init__(self, config, path, mmcif_dir=None, msa_dir=None, templates_dir=None):
         super().__init__()
-        self.pdb_chains = pd.read_csv(path, index_col='name')
+        self.pdb_chains = pd.read_csv(path, index_col='PDB_ID')
         self.templates_dir = templates_dir
         
     def __len__(self):
