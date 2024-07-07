@@ -42,6 +42,7 @@ parser.add_argument("--noisy_first", action="store_true", default=False)
 parser.add_argument("--runtime_json", type=str, default=None)
 parser.add_argument("--no_overwrite", action="store_true", default=False)
 parser.add_argument("--device", default="cuda")
+parser.add_argument("--runtime_csv", type=str, default="runtime.csv")  # New parameter
 args = parser.parse_args()
 
 config = model_config("initial_training", train=True, low_prec=True)
@@ -108,7 +109,8 @@ def main():
 
     results = defaultdict(list)
     os.makedirs(args.outpdb, exist_ok=True)
-    runtime = defaultdict(list)
+    runtime = []
+
     for i, item in enumerate(valset):
         if args.pdb_id and item["name"] not in args.pdb_id:
             continue
@@ -135,7 +137,17 @@ def main():
                 logger.info(
                     f"\n{item['name']}: Length {len(item['seqres'])}, Completed {args.samples} samples in {inference_time:.2f} seconds, {inference_time / args.samples:.2f} seconds per sample."
                 )
-                runtime[item["name"]].append(inference_time)
+                runtime.append(
+                    {
+                        "timestamp": time.strftime(
+                            "%Y-%m-%d %H:%M:%S", time.gmtime(start)
+                        ),
+                        "protein_id": item["name"],
+                        "length": len(item["seqres"]),
+                        "total_time_seconds": inference_time,
+                        "time_per_sample_seconds": inference_time / args.samples,
+                    }
+                )
                 result.append(prots[-1])
             except RuntimeError as e:
                 if "CUDA out of memory" in str(e):
@@ -151,6 +163,11 @@ def main():
 
         with open(f'{args.outpdb}/{item["name"]}.pdb', "w") as f:
             f.write(protein.prots_to_pdb(result))
+
+    # Save runtime data to CSV
+    if args.runtime_csv:
+        df = pd.DataFrame(runtime)
+        df.to_csv(args.runtime_csv, index=False)
 
     if args.runtime_json:
         with open(args.runtime_json, "w") as f:
