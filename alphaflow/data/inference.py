@@ -81,12 +81,12 @@ class CSVDataset:
     def __getitem__(self, idx):
         row = self.pdb_chains.iloc[idx]
         batch = {
-            "PDB_ID": row.PDB_ID,
-            "uniprot_sequence": row.uniprot_sequence,
-            "aatype": seq_to_tensor(row.uniprot_sequence),
-            "residue_index": torch.arange(len(row.uniprot_sequence)),
-            "pseudo_beta_mask": torch.ones(len(row.uniprot_sequence)),
-            "seq_mask": torch.ones(len(row.uniprot_sequence)),
+            "PDB_ID": row["PDB_ID"],
+            "uniprot_sequence": row["uniprot_sequence"],
+            "aatype": seq_to_tensor(row["uniprot_sequence"]),
+            "residue_index": torch.arange(len(row["uniprot_sequence"])),
+            "pseudo_beta_mask": torch.ones(len(row["uniprot_sequence"])),
+            "seq_mask": torch.ones(len(row["uniprot_sequence"])),
         }
         make_atom14_masks(batch)
 
