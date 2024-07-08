@@ -1,6 +1,5 @@
 import argparse
 import torch
-import tqdm
 import os
 import wandb
 import json
@@ -117,7 +116,7 @@ def main():
         if args.no_overwrite and os.path.exists(f'{args.outpdb}/{item["name"]}.pdb'):
             continue
         result = []
-        for j in tqdm.trange(args.samples):
+        for j in args.samples:
             if args.subsample or args.resample:
                 item = valset[i]  # resample MSA
 
