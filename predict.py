@@ -142,26 +142,27 @@ def main():
                 else:
                     raise e
 
-            inference_time = time.time() - start
-            performance_metrics = {
+            # Clear CUDA cache
+            torch.cuda.empty_cache()
+
+        inference_time = time.time() - start
+        performance_metrics = {
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(start)),
+            "protein_id": item["name"],
+            "length": len(item["seqres"]),
+            "total_time_seconds": inference_time,
+            "time_per_sample_seconds": inference_time / args.samples,
+        }
+        logger.info(str(performance_metrics))
+        runtime.append(
+            {
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(start)),
                 "protein_id": item["name"],
                 "length": len(item["seqres"]),
                 "total_time_seconds": inference_time,
                 "time_per_sample_seconds": inference_time / args.samples,
             }
-            logger.info(str(performance_metrics))
-            runtime.append(
-                {
-                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(start)),
-                    "protein_id": item["name"],
-                    "length": len(item["seqres"]),
-                    "total_time_seconds": inference_time,
-                    "time_per_sample_seconds": inference_time / args.samples,
-                }
-            )
-            # Clear CUDA cache
-            torch.cuda.empty_cache()
+        )
 
         with open(f'{args.outpdb}/{item["name"]}.pdb', "w") as f:
             f.write(protein.prots_to_pdb(result))
