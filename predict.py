@@ -116,13 +116,13 @@ def main():
         if args.no_overwrite and os.path.exists(f'{args.outpdb}/{item["name"]}.pdb'):
             continue
         result = []
+        start = time.time()
         for j in args.samples:
             if args.subsample or args.resample:
                 item = valset[i]  # resample MSA
 
             batch = collate_fn([item])
             batch = tensor_tree_map(lambda x: x.to(device), batch)
-            start = time.time()
             try:
                 prots = model.inference(
                     batch,
@@ -131,21 +131,6 @@ def main():
                     no_diffusion=args.no_diffusion,
                     schedule=schedule,
                     self_cond=args.self_cond,
-                )
-                inference_time = time.time() - start
-                logger.info(
-                    f"\n{item['name']}: Length {len(item['seqres'])}, Completed {args.samples} samples in {inference_time:.2f} seconds, {inference_time / args.samples:.2f} seconds per sample."
-                )
-                runtime.append(
-                    {
-                        "timestamp": time.strftime(
-                            "%Y-%m-%d %H:%M:%S", time.gmtime(start)
-                        ),
-                        "protein_id": item["name"],
-                        "length": len(item["seqres"]),
-                        "total_time_seconds": inference_time,
-                        "time_per_sample_seconds": inference_time / args.samples,
-                    }
                 )
                 result.append(prots[-1])
             except RuntimeError as e:
@@ -157,6 +142,24 @@ def main():
                 else:
                     raise e
 
+            inference_time = time.time() - start
+            performance_metrics = {
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(start)),
+                "protein_id": item["name"],
+                "length": len(item["seqres"]),
+                "total_time_seconds": inference_time,
+                "time_per_sample_seconds": inference_time / args.samples,
+            }
+            logger.info(str(performance_metrics))
+            runtime.append(
+                {
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(start)),
+                    "protein_id": item["name"],
+                    "length": len(item["seqres"]),
+                    "total_time_seconds": inference_time,
+                    "time_per_sample_seconds": inference_time / args.samples,
+                }
+            )
             # Clear CUDA cache
             torch.cuda.empty_cache()
 
