@@ -117,7 +117,7 @@ def main():
             continue
         result = []
         start = time.time()
-        for j in args.samples:
+        for j in range(args.samples):
             if args.subsample or args.resample:
                 item = valset[i]  # resample MSA
 
