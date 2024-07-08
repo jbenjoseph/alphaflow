@@ -111,19 +111,21 @@ def main():
     runtime = []
 
     for i, item in enumerate(valset):
-        if args.pdb_id and item["name"] not in args.pdb_id:
-            continue
-        if args.no_overwrite and os.path.exists(f'{args.outpdb}/{item["name"]}.pdb'):
-            continue
-        result = []
-        start = time.time()
-        for j in range(args.samples):
-            if args.subsample or args.resample:
-                item = valset[i]  # resample MSA
+        try:
+            if args.pdb_id and item["name"] not in args.pdb_id:
+                continue
+            if args.no_overwrite and os.path.exists(
+                f'{args.outpdb}/{item["name"]}.pdb'
+            ):
+                continue
+            result = []
+            start = time.time()
+            for j in range(args.samples):
+                if args.subsample or args.resample:
+                    item = valset[i]  # resample MSA
 
-            batch = collate_fn([item])
-            batch = tensor_tree_map(lambda x: x.to(device), batch)
-            try:
+                batch = collate_fn([item])
+                batch = tensor_tree_map(lambda x: x.to(device), batch)
                 prots = model.inference(
                     batch,
                     as_protein=True,
@@ -133,17 +135,17 @@ def main():
                     self_cond=args.self_cond,
                 )
                 result.append(prots[-1])
-            except RuntimeError as e:
-                if "CUDA out of memory" in str(e):
-                    logger.warning(
-                        f"\nOut of memory when processing {item['name']}: {str(e)}"
-                    )
-                    continue
-                else:
-                    raise e
 
-            # Clear CUDA cache
-            torch.cuda.empty_cache()
+                # Clear CUDA cache
+                torch.cuda.empty_cache()
+        except RuntimeError as e:
+            if "CUDA out of memory" in str(e):
+                logger.warning(
+                    f"\nOut of memory when processing {item['name']} (len {len(item['seqres'])}): {str(e)}"
+                )
+                continue
+            else:
+                raise e
 
         inference_time = time.time() - start
         performance_metrics = {
