@@ -349,6 +349,10 @@ class ESMFold(nn.Module):
         structure["final_atom_positions"] = atom14_to_atom37(structure["sm"]["positions"][-1], batch)
         structure["final_affine_tensor"] = structure["sm"]["frames"][-1]
         if "name" in batch: structure["name"] = batch["name"]
+
+        # Add embedding_vector to the output structure
+        structure["embedding_vector"] = esm_s
+
         return structure
 
     @torch.no_grad()
