@@ -41,7 +41,8 @@ parser.add_argument("--noisy_first", action="store_true", default=False)
 parser.add_argument("--runtime_json", type=str, default=None)
 parser.add_argument("--no_overwrite", action="store_true", default=False)
 parser.add_argument("--device", default="cuda")
-parser.add_argument("--runtime_csv", type=str, default="runtime.csv")  # New parameter
+parser.add_argument("--runtime_csv", type=str, default="runtime.csv")
+parser.add_argument("--make_embeddings", action="store_true", default=False)
 args = parser.parse_args()
 
 config = model_config("initial_training", train=True, low_prec=True)
@@ -126,15 +127,22 @@ def main():
 
                 batch = collate_fn([item])
                 batch = tensor_tree_map(lambda x: x.to(device), batch)
+                if args.make_embeddings:
+                    as_protein = False
+                else:
+                    as_protein = True
                 prots = model.inference(
                     batch,
-                    as_protein=True,
+                    as_protein=as_protein,
                     noisy_first=args.noisy_first,
                     no_diffusion=args.no_diffusion,
                     schedule=schedule,
                     self_cond=args.self_cond,
                 )
-                result.append(prots[-1])
+                if args.make_embeddings:
+                    result.append(prots[-1]["embedding_vector"])
+                else:
+                    result.append(prots[-1])
 
                 # Clear CUDA cache
                 torch.cuda.empty_cache()
@@ -165,9 +173,12 @@ def main():
                 "time_per_sample_seconds": inference_time / args.samples,
             }
         )
-
-        with open(f'{args.outpdb}/{item["name"]}.pdb', "w") as f:
-            f.write(protein.prots_to_pdb(result))
+        if args.make_embeddings:
+            with open(f'{args.outpdb}/{item["name"]}.npy', "wb") as f:
+                np.save(f, np.array(result))
+        else:
+            with open(f'{args.outpdb}/{item["name"]}.pdb', "w") as f:
+                f.write(protein.prots_to_pdb(result))
 
     # Save runtime data to CSV
     if args.runtime_csv:
