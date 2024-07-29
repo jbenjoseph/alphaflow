@@ -140,7 +140,7 @@ def main():
                     self_cond=args.self_cond,
                 )
                 if args.make_embeddings:
-                    result.append(prots[-1]["embedding_vector"])
+                    result.append(prots[-1]["embedding_vector"].cpu().numpy())
                 else:
                     result.append(prots[-1])
 
@@ -175,7 +175,7 @@ def main():
         )
         if args.make_embeddings:
             with open(f'{args.outpdb}/{item["name"]}.npy', "wb") as f:
-                np.save(f, np.array(result.cpu()))
+                np.save(f, np.array(result))
         else:
             with open(f'{args.outpdb}/{item["name"]}.pdb', "w") as f:
                 f.write(protein.prots_to_pdb(result))
