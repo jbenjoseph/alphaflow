@@ -175,7 +175,7 @@ def main():
         )
         if args.make_embeddings:
             with open(f'{args.outpdb}/{item["name"]}.npy', "wb") as f:
-                np.save(f, np.array(result))
+                np.save(f, np.array(result.cpu()))
         else:
             with open(f'{args.outpdb}/{item["name"]}.pdb', "w") as f:
                 f.write(protein.prots_to_pdb(result))
