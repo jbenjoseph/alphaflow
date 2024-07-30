@@ -389,6 +389,10 @@ class ModelWrapper(pl.LightningModule):
             return prots
         else:
             return outputs
+        
+
+    def get_embedding_vector(self, batch):
+        return self.inference(batch, as_protein=False, no_diffusion=False, self_cond=False, noisy_first=False)[0]['embedding_vector']
     
         
     def _compute_validation_metrics(self, 
