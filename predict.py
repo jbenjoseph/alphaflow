@@ -43,6 +43,7 @@ parser.add_argument("--no_overwrite", action="store_true", default=False)
 parser.add_argument("--device", default="cuda")
 parser.add_argument("--runtime_csv", type=str, default="runtime.csv")
 parser.add_argument("--make_embeddings", action="store_true", default=False)
+parser.add_argument("--from_pdbs", type=str, default=None)
 args = parser.parse_args()
 
 config = model_config("initial_training", train=True, low_prec=True)
@@ -59,8 +60,45 @@ if args.subsample:  # https://elifesciences.org/articles/75751#s3
     data_cfg.predict.max_extra_msa = args.subsample
 
 
+def from_pdbs(model):
+    if args.make_embeddings:
+        as_protein = False
+    else:
+        as_protein = True
+
+    # iterate over pdbs in from_pdbs folder
+    pdbs = os.listdir(args.from_pdbs)
+    for pdb in pdbs:
+        if pdb.endswith(".pdb"):
+            pdb_id = pdb.split(".")[0]
+            result = []
+            for i in range(args.samples):
+                with open(f"{args.from_pdbs}/{pdb}", "r") as f:
+                    pdb_str = f.read()
+                    for i in range(args.samples):
+                        prot = model.inference(
+                        pdb_str,
+                        as_protein=as_protein,
+                        noisy_first=args.noisy_first,
+                        no_diffusion=args.no_diffusion,
+                        schedule=schedule,
+                        self_cond=args.self_cond,
+                        batch_is_pdb=True,
+                    )
+                    result.append(prot)
+            if args.make_embeddings:
+                with open(f'{args.outpdb}/{pdb_id}.npy', "wb") as f:
+                    np.save(f, np.array(result))
+            else:
+                with open(f'{args.outpdb}/{pdb_id}.pdb', "w") as f:
+                    f.write(protein.prots_to_pdb(result))
+            
+                    
+
+
 @torch.no_grad()
 def main():
+    
     valset = {
         "alphafold": AlphaFoldCSVDataset,
         "esmfold": CSVDataset,
@@ -110,6 +148,10 @@ def main():
     results = defaultdict(list)
     os.makedirs(args.outpdb, exist_ok=True)
     runtime = []
+
+    if args.from_pdbs:
+        from_pdbs(model)
+        return
 
     for i, item in enumerate(valset):
         try:
