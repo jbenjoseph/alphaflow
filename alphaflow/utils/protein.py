@@ -82,6 +82,21 @@ def output_to_protein(output):
         pdbs.append(pred)
     return pdbs
 
+def protein_to_output(prot, **kwargs):
+    """Returns the model output given the protein."""
+    output = {
+        "final_atom_positions": prot.atom_positions,
+        "atom37_atom_exists": prot.atom_mask,
+        "aatype": prot.aatype,
+        "name": prot.name,
+        "residue_index": prot.residue_index - 1,
+        "plddt": prot.b_factors.mean(-1),
+    }
+    if prot.chain_index is not None:
+        output["chain_index"] = prot.chain_index
+    return output
+
+
 def from_dict(prot):
     name = prot['domain_name'].item().decode(encoding='utf-8')
     seq = prot['sequence'].item().decode(encoding='utf-8')

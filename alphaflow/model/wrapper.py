@@ -347,20 +347,25 @@ class ModelWrapper(pl.LightningModule):
                 if p.grad is None:
                     print(name)
 
-    def inference(self, batch, as_protein=False, no_diffusion=False, self_cond=True, noisy_first=False, schedule=None):
+    def inference(self, batch, as_protein=False, no_diffusion=False, self_cond=True, noisy_first=False, schedule=None, batch_is_pdb=False):
         
         N = batch['aatype'].shape[1]
         device = batch['aatype'].device
         prior = HarmonicPrior(N)
         prior.to(device)
         noisy = prior.sample()
+
+        if batch_is_pdb:
+            model = protein.protein_to_output
+        else:
+            model = self.model
         
         if noisy_first:
             batch['noised_pseudo_beta_dists'] = torch.sum((noisy.unsqueeze(-2) - noisy.unsqueeze(-3)) ** 2, dim=-1)**0.5
             batch['t'] = torch.ones(1, device=noisy.device)
             
         if no_diffusion:
-            output = self.model(batch)
+            output = model(batch)
             if as_protein:
                 return protein.output_to_protein({**output, **batch})
             else:
@@ -371,7 +376,7 @@ class ModelWrapper(pl.LightningModule):
         outputs = []
         prev_outputs = None
         for t, s in zip(schedule[:-1], schedule[1:]):
-            output = self.model(batch, prev_outputs=prev_outputs)
+            output = model(batch, prev_outputs=prev_outputs)
             pseudo_beta = pseudo_beta_fn(batch['aatype'], output['final_atom_positions'], None)
             outputs.append({**output, **batch})
             noisy = rmsdalign(pseudo_beta, noisy)
@@ -390,6 +395,7 @@ class ModelWrapper(pl.LightningModule):
         else:
             return outputs
         
+
 
     def get_embedding_vector(self, batch):
         return self.inference(batch, as_protein=False, no_diffusion=False, self_cond=False, noisy_first=False)[0]['embedding_vector']
